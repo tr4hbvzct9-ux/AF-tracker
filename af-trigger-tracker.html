@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>AF Trigger Tracker</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #1a1f35;
+    --bg2: #232845;
+    --bg3: #2d3357;
+    --accent: #f5824a;
+    --accent2: #ffa47a;
+    --text: #e8ecf5;
+    --muted: #8a91b0;
+    --good: #4ac98a;
+    --warn: #f5c842;
+    --bad: #f54a4a;
+    --border: rgba(255,255,255,0.08);
+    --radius: 14px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    padding-bottom: 40px;
+  }
+
+  header {
+    background: var(--bg2);
+    padding: 20px 16px 14px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  header h1 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.3px;
+  }
+
+  header p {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .tab-bar {
+    display: flex;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 64px;
+    z-index: 9;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 12px 4px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+
+  .tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  .page { display: none; padding: 16px; }
+  .page.active { display: block; }
+
+  /* FORM STYLES */
+  .date-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    background: var(--bg3);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+  }
+
+  .date-bar input[type="date"] {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 600;
+    outline: none;
+    color-scheme: dark;
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--accent);
+    margin-bottom: 10px;
+    margin-top: 22px;
+  }
+
+  .card {
+    background: var(--bg2);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border);
+  }
+
+  .card-label {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  /* SLIDER */
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .slider-row input[type="range"] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--bg3);
+    outline: none;
+  }
+
+  .slider-row input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+  }
+
+  .slider-val {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    min-width: 32px;
+    text-align: right;
+  }
+
+  /* TOGGLE CHIPS */
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .chip {
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    background: var(--bg3);
+    color: var(--muted);
+    cursor: pointer;
+    border: 1px solid var(--border);
+    transition: all 0.15s;
+    user-select: none;
+  }
+
+  .chip.selected {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* TEXTAREA */
+  textarea {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    color: var(--text);
+    font-size: 14px;
+    resize: none;
+    outline: none;
+    font-family: inherit;
+    line-height: 1.5;
+  }
+
+  textarea::placeholder { color: var(--muted); }
+
+  /* SELECT */
+  select {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    color: var(--text);
+    font-size: 14px;
+    outline: none;
+    -webkit-appearance: none;
+    color-scheme: dark;
+  }
+
+  /* TIME INPUTS */
+  .time-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  .time-field {
+    flex: 1;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+
+  .time-field label {
+    font-size: 11px;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .time-field input[type="time"] {
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-size: 16px;
+    font-weight: 600;
+    outline: none;
+    width: 100%;
+    color-scheme: dark;
+  }
+
+  /* SAVE BUTTON */
+  .save-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 24px;
+    letter-spacing: 0.3px;
+  }
+
+  .save-btn:active { opacity: 0.85; }
+
+  /* AF INDICATOR */
+  .af-toggle {
+    display: flex;
+    gap: 10px;
+  }
+
+  .af-option {
+    flex: 1;
+    padding: 14px 8px;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 2px solid var(--border);
+    color: var(--muted);
+    transition: all 0.15s;
+  }
+
+  .af-option.yes.selected { background: rgba(245,74,74,0.2); border-color: var(--bad); color: var(--bad); }
+  .af-option.no.selected { background: rgba(74,201,138,0.2); border-color: var(--good); color: var(--good); }
+  .af-option.unsure.selected { background: rgba(245,200,66,0.2); border-color: var(--warn); color: var(--warn); }
+
+  /* HISTORY PAGE */
+  .entry-card {
+    background: var(--bg2);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+  }
+
+  .entry-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .entry-date {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .af-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 12px;
+  }
+
+  .af-badge.yes { background: rgba(245,74,74,0.2); color: var(--bad); }
+  .af-badge.no { background: rgba(74,201,138,0.2); color: var(--good); }
+  .af-badge.unsure { background: rgba(245,200,66,0.2); color: var(--warn); }
+
+  .entry-stats {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .stat-pill {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .stat-pill span {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  .entry-triggers {
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  .mini-chip {
+    font-size: 11px;
+    padding: 3px 9px;
+    background: var(--bg3);
+    border-radius: 10px;
+    color: var(--muted);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+
+  .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; line-height: 1.6; }
+
+  /* ANALYSE PAGE */
+  .insight-card {
+    background: var(--bg2);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border);
+  }
+
+  .insight-title {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .insight-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .insight-sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .trigger-freq {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .trigger-freq:last-child { border-bottom: none; }
+
+  .freq-bar {
+    height: 6px;
+    background: var(--bg3);
+    border-radius: 3px;
+    flex: 1;
+    margin: 0 12px;
+    overflow: hidden;
+  }
+
+  .freq-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+  }
+
+  .freq-count {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    min-width: 20px;
+    text-align: right;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--good);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 24px;
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.3s;
+    white-space: nowrap;
+  }
+
+  .toast.show { opacity: 1; }
+
+  /* DETAIL MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+    padding: 20px 16px;
+    overflow-y: auto;
+  }
+
+  .modal-overlay.open { display: block; }
+
+  .modal {
+    background: var(--bg2);
+    border-radius: var(--radius);
+    padding: 20px;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .modal-close {
+    font-size: 20px;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 4px 8px;
+  }
+
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+
+  .detail-row:last-child { border-bottom: none; }
+  .detail-key { color: var(--muted); }
+  .detail-val { color: var(--text); font-weight: 500; text-align: right; max-width: 60%; }
+
+  .delete-btn {
+    width: 100%;
+    padding: 12px;
+    background: rgba(245,74,74,0.15);
+    color: var(--bad);
+    border: 1px solid rgba(245,74,74,0.3);
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 16px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>AF Trigger Tracker</h1>
+  <p>Dagboek voor het herkennen van patronen</p>
+</header>
+
+<div class="tab-bar">
+  <div class="tab active" onclick="switchTab('invullen')">Invullen</div>
+  <div class="tab" onclick="switchTab('geschiedenis')">Geschiedenis</div>
+  <div class="tab" onclick="switchTab('analyse')">Analyse</div>
+</div>
+
+<!-- INVULLEN PAGE -->
+<div class="page active" id="page-invullen">
+
+  <div class="date-bar" style="margin-top:16px;">
+    <span style="font-size:18px;">📅</span>
+    <input type="date" id="entry-date">
+  </div>
+
+  <!-- AF vandaag? -->
+  <div class="section-label">AF vandaag?</div>
+  <div class="card">
+    <div class="af-toggle">
+      <div class="af-option yes" onclick="selectAF('yes')">Ja 💔</div>
+      <div class="af-option no" onclick="selectAF('no')">Nee ✅</div>
+      <div class="af-option unsure" onclick="selectAF('unsure')">Onzeker</div>
+    </div>
+  </div>
+
+  <!-- Garmin -->
+  <div class="section-label">Garmin gegevens</div>
+  <div class="card">
+    <div class="card-label">Body Battery - begin van de dag</div>
+    <div class="slider-row">
+      <input type="range" id="bb-morning" min="0" max="100" value="50" oninput="updateVal('bb-morning-val', this.value)">
+      <div class="slider-val" id="bb-morning-val">50</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-label">Body Battery - laagste punt van de dag</div>
+    <div class="slider-row">
+      <input type="range" id="bb-low" min="0" max="100" value="30" oninput="updateVal('bb-low-val', this.value)">
+      <div class="slider-val" id="bb-low-val">30</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-label">Stressscore (Garmin gemiddelde)</div>
+    <div class="slider-row">
+      <input type="range" id="stress" min="0" max="100" value="30" oninput="updateVal('stress-val', this.value)">
+      <div class="slider-val" id="stress-val">30</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-label">HRV (ms, als beschikbaar)</div>
+    <div class="slider-row">
+      <input type="range" id="hrv" min="10" max="120" value="40" oninput="updateVal('hrv-val', this.value)">
+      <div class="slider-val" id="hrv-val">40</div>
+    </div>
+  </div>
+
+  <!-- Slaap -->
+  <div class="section-label">Slaap</div>
+  <div class="card">
+    <div class="time-row">
+      <div class="time-field">
+        <label>Naar bed</label>
+        <input type="time" id="sleep-start" value="23:00">
+      </div>
+      <div class="time-field">
+        <label>Wakker</label>
+        <input type="time" id="sleep-end" value="07:00">
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-label">Slaapkwaliteit</div>
+    <div class="chips" id="chips-sleep">
+      <div class="chip" onclick="toggleChip(this, 'sleep')">Slecht</div>
+      <div class="chip" onclick="toggleChip(this, 'sleep')">Matig</div>
+      <div class="chip" onclick="toggleChip(this, 'sleep')">Goed</div>
+      <div class="chip" onclick="toggleChip(this, 'sleep')">Heel goed</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-label">Midden in de nacht wakker?</div>
+    <div class="chips" id="chips-wakeup">
+      <div class="chip" onclick="toggleChip(this, 'wakeup')">Nee</div>
+      <div class="chip" onclick="toggleChip(this, 'wakeup')">1x</div>
+      <div class="chip" onclick="toggleChip(this, 'wakeup')">Meerdere keren</div>
+    </div>
+  </div>
+
+  <!-- Voeding & drank -->
+  <div class="section-label">Voeding & drank</div>
+  <div class="card">
+    <div class="card-label">Eetpatroon vandaag</div>
+    <div class="chips" id="chips-eating">
+      <div class="chip" onclick="toggleChip(this, 'eating')">IF gevolgd</div>
+      <div class="chip" onclick="toggleChip(this, 'eating')">Meer gesnackt</div>
+      <div class="chip" onclick="toggleChip(this, 'eating')">Laat gegeten</div>
+      <div class="chip" onclick="toggleChip(this, 'eating')">Gezond</div>
+      <div class="chip" onclick="toggleChip(this, 'eating')">Minder gezond</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-label">Cafeïne</div>
+    <div class="chips" id="chips-caffeine">
+      <div class="chip" onclick="toggleChip(this, 'caffeine')">Geen</div>
+      <div class="chip" onclick="toggleChip(this, 'caffeine')">1-2 koppen</div>
+      <div class="chip" onclick="toggleChip(this, 'caffeine')">3+ koppen</div>
+      <div class="chip" onclick="toggleChip(this, 'caffeine')">Laat op de dag</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-label">Alcohol gisteren of vandaag?</div>
+    <div class="chips" id="chips-alcohol">
+      <div class="chip" onclick="toggleChip(this, 'alcohol')">Nee</div>
+      <div class="chip" onclick="toggleChip(this, 'alcohol')">1 glas</div>
+      <div class="chip" onclick="toggleChip(this, 'alcohol')">2+ glazen</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-label">Water (liter)</div>
+    <div class="slider-row">
+      <input type="range" id="water" min="0" max="3" step="0.25" value="1.5" oninput="updateVal('water-val', parseFloat(this.value).toFixed(2) + 'L')">
+      <div class="slider-val" id="water-val" style="font-size:14px;">1.50L</div>
+    </div>
+  </div>
+
+  <!-- Beweging -->
+  <div class="section-label">Beweging</div>
+  <div class="card">
+    <div class="card-label">Sport vandaag</div>
+    <div class="chips" id="chips-sport">
+      <div class="chip" onclick="toggleChip(this, 'sport')">Geen</div>
+      <div class="chip" onclick="toggleChip(this, 'sport')">Fietsen</div>
+      <div class="chip" onclick="toggleChip(this, 'sport')">Hardlopen</div>
+      <div class="chip" onclick="toggleChip(this, 'sport')">Krachttraining</div>
+      <div class="chip" onclick="toggleChip(this, 'sport')">Wandelen</div>
+      <div class="chip" onclick="toggleChip(this, 'sport')">Lichte beweging</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-label">Intensiteit sport</div>
+    <div class="chips" id="chips-intensity">
+      <div class="chip" onclick="toggleChip(this, 'intensity')">Laag</div>
+      <div class="chip" onclick="toggleChip(this, 'intensity')">Gemiddeld</div>
+      <div class="chip" onclick="toggleChip(this, 'intensity')">Hoog</div>
+      <div class="chip" onclick="toggleChip(this, 'intensity')">Max inspanning</div>
+    </div>
+  </div>
+
+  <!-- Gevoel & stress -->
+  <div class="section-label">Gevoel & stress</div>
+  <div class="card">
+    <div class="card-label">Algeheel gevoel vandaag</div>
+    <div class="slider-row">
+      <input type="range" id="feeling" min="1" max="10" value="6" oninput="updateVal('feeling-val', this.value)">
+      <div class="slider-val" id="feeling-val">6</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-label">Stressbronnen vandaag</div>
+    <div class="chips" id="chips-stressors">
+      <div class="chip" onclick="toggleChip(this, 'stressors')">Werk</div>
+      <div class="chip" onclick="toggleChip(this, 'stressors')">Deadlines</div>
+      <div class="chip" onclick="toggleChip(this, 'stressors')">Financieel</div>
+      <div class="chip" onclick="toggleChip(this, 'stressors')">Relaties</div>
+      <div class="chip" onclick="toggleChip(this, 'stressors')">Drukke dag</div>
+      <div class="chip" onclick="toggleChip(this, 'stressors')">Druk in hoofd</div>
+      <div class="chip" onclick="toggleChip(this, 'stressors')">Weinig rust</div>
+      <div class="chip" onclick="toggleChip(this, 'stressors')">Zorgen</div>
+      <div class="chip" onclick="toggleChip(this, 'stressors')">Sociale druk</div>
+      <div class="chip" onclick="toggleChip(this, 'stressors')">Geen</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-label">Emotionele toestand overheersend</div>
+    <div class="chips" id="chips-mood">
+      <div class="chip" onclick="toggleChip(this, 'mood')">Rustig</div>
+      <div class="chip" onclick="toggleChip(this, 'mood')">Gespannen</div>
+      <div class="chip" onclick="toggleChip(this, 'mood')">Moe</div>
+      <div class="chip" onclick="toggleChip(this, 'mood')">Energiek</div>
+      <div class="chip" onclick="toggleChip(this, 'mood')">Geïrriteerd</div>
+      <div class="chip" onclick="toggleChip(this, 'mood')">Angstig</div>
+      <div class="chip" onclick="toggleChip(this, 'mood')">Blij</div>
+      <div class="chip" onclick="toggleChip(this, 'mood')">Overweldigd</div>
+    </div>
+  </div>
+
+  <!-- Omgeving -->
+  <div class="section-label">Omgeving & overig</div>
+  <div class="card">
+    <div class="card-label">Temperatuur / weer</div>
+    <div class="chips" id="chips-weather">
+      <div class="chip" onclick="toggleChip(this, 'weather')">Koud</div>
+      <div class="chip" onclick="toggleChip(this, 'weather')">Normaal</div>
+      <div class="chip" onclick="toggleChip(this, 'weather')">Warm</div>
+      <div class="chip" onclick="toggleChip(this, 'weather')">Heet</div>
+      <div class="chip" onclick="toggleChip(this, 'weather')">Wisselvallig</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-label">Medicatie / supplementen</div>
+    <div class="chips" id="chips-meds">
+      <div class="chip" onclick="toggleChip(this, 'meds')">Zoals normaal</div>
+      <div class="chip" onclick="toggleChip(this, 'meds')">Vergeten</div>
+      <div class="chip" onclick="toggleChip(this, 'meds')">Extra supplement</div>
+      <div class="chip" onclick="toggleChip(this, 'meds')">Geen</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-label">Menstruatiecyclus (optioneel)</div>
+    <div class="chips" id="chips-cycle">
+      <div class="chip" onclick="toggleChip(this, 'cycle')">Menstruatie</div>
+      <div class="chip" onclick="toggleChip(this, 'cycle')">Ovulatie</div>
+      <div class="chip" onclick="toggleChip(this, 'cycle')">PMS</div>
+      <div class="chip" onclick="toggleChip(this, 'cycle')">Niet relevant</div>
+    </div>
+  </div>
+
+  <!-- Notities -->
+  <div class="section-label">Notities</div>
+  <div class="card">
+    <textarea id="notes" rows="4" placeholder="Bijzonderheden, gevoel, opvallende dingen..."></textarea>
+  </div>
+
+  <button class="save-btn" onclick="saveEntry()">Dag opslaan</button>
+
+</div>
+
+<!-- GESCHIEDENIS PAGE -->
+<div class="page" id="page-geschiedenis">
+  <div style="margin-top:16px;" id="history-list">
+    <div class="empty-state">
+      <div class="icon">📋</div>
+      <p>Nog geen dagen geregistreerd.<br>Begin met het invullen van vandaag!</p>
+    </div>
+  </div>
+</div>
+
+<!-- ANALYSE PAGE -->
+<div class="page" id="page-analyse">
+  <div style="margin-top:16px;">
+
+    <div class="section-label">Back-up & herstel</div>
+    <div class="card">
+      <div class="card-label" style="margin-bottom:14px;">Download al je data als back-up, of zet een eerdere back-up terug.</div>
+      <div style="display:flex;gap:10px;">
+        <button class="save-btn" style="margin-top:0;flex:1;font-size:14px;padding:12px 8px;" onclick="exportData()">⬇ Exporteer back-up</button>
+        <label style="flex:1;">
+          <div class="save-btn" style="margin-top:0;font-size:14px;padding:12px 8px;background:var(--bg3);border:1px solid var(--border);text-align:center;cursor:pointer;">⬆ Importeer back-up</div>
+          <input type="file" accept=".json" style="display:none;" onchange="importData(event)">
+        </label>
+      </div>
+    </div>
+
+    <div style="margin-top:4px;" id="analyse-content">
+      <div class="empty-state">
+        <div class="icon">📊</div>
+        <p>Vul minimaal 3 dagen in om patronen te zien.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal-content">
+    <div class="modal-header">
+      <div style="font-size:16px;font-weight:700;" id="modal-title">Dag detail</div>
+      <div class="modal-close" onclick="closeModalDirect()">✕</div>
+    </div>
+    <div id="modal-body"></div>
+    <button class="delete-btn" id="modal-delete-btn">Verwijder deze dag</button>
+  </div>
+</div>
+
+<div class="toast" id="toast">✓ Opgeslagen!</div>
+
+<script>
+const KEY = 'af_tracker_entries';
+let afValue = null;
+let chipSelections = {};
+let currentDeleteDate = null;
+
+// Init
+document.getElementById('entry-date').value = todayStr();
+
+function todayStr() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function formatDate(str) {
+  const d = new Date(str + 'T00:00:00');
+  return d.toLocaleDateString('nl-NL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function updateVal(id, val) {
+  document.getElementById(id).textContent = val;
+}
+
+function selectAF(val) {
+  afValue = val;
+  document.querySelectorAll('.af-option').forEach(el => el.classList.remove('selected'));
+  document.querySelector('.af-option.' + val).classList.add('selected');
+}
+
+function toggleChip(el, group) {
+  if (!chipSelections[group]) chipSelections[group] = new Set();
+  if (el.classList.contains('selected')) {
+    el.classList.remove('selected');
+    chipSelections[group].delete(el.textContent);
+  } else {
+    el.classList.add('selected');
+    chipSelections[group].add(el.textContent);
+  }
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    const tabs = ['invullen','geschiedenis','analyse'];
+    t.classList.toggle('active', tabs[i] === name);
+  });
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  if (name === 'geschiedenis') renderHistory();
+  if (name === 'analyse') renderAnalyse();
+}
+
+function getChips(group) {
+  return chipSelections[group] ? Array.from(chipSelections[group]) : [];
+}
+
+function saveEntry() {
+  const date = document.getElementById('entry-date').value;
+  if (!date) { alert('Kies een datum.'); return; }
+
+  const entry = {
+    date,
+    af: afValue,
+    bbMorning: parseInt(document.getElementById('bb-morning').value),
+    bbLow: parseInt(document.getElementById('bb-low').value),
+    stress: parseInt(document.getElementById('stress').value),
+    hrv: parseInt(document.getElementById('hrv').value),
+    sleepStart: document.getElementById('sleep-start').value,
+    sleepEnd: document.getElementById('sleep-end').value,
+    sleepQuality: getChips('sleep'),
+    wakeup: getChips('wakeup'),
+    eating: getChips('eating'),
+    caffeine: getChips('caffeine'),
+    alcohol: getChips('alcohol'),
+    water: parseFloat(document.getElementById('water').value),
+    sport: getChips('sport'),
+    intensity: getChips('intensity'),
+    feeling: parseInt(document.getElementById('feeling').value),
+    stressors: getChips('stressors'),
+    mood: getChips('mood'),
+    weather: getChips('weather'),
+    meds: getChips('meds'),
+    cycle: getChips('cycle'),
+    notes: document.getElementById('notes').value.trim()
+  };
+
+  const all = loadAll();
+  all[date] = entry;
+  localStorage.setItem(KEY, JSON.stringify(all));
+  showToast();
+  resetForm();
+}
+
+function loadAll() {
+  try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; }
+}
+
+function showToast() {
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+function resetForm() {
+  afValue = null;
+  chipSelections = {};
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+  document.querySelectorAll('.af-option').forEach(c => c.classList.remove('selected'));
+  document.getElementById('notes').value = '';
+  document.getElementById('bb-morning').value = 50; updateVal('bb-morning-val', 50);
+  document.getElementById('bb-low').value = 30; updateVal('bb-low-val', 30);
+  document.getElementById('stress').value = 30; updateVal('stress-val', 30);
+  document.getElementById('hrv').value = 40; updateVal('hrv-val', 40);
+  document.getElementById('feeling').value = 6; updateVal('feeling-val', 6);
+  document.getElementById('water').value = 1.5; updateVal('water-val', '1.50L');
+  document.getElementById('sleep-start').value = '23:00';
+  document.getElementById('sleep-end').value = '07:00';
+  document.getElementById('entry-date').value = todayStr();
+}
+
+function afLabel(v) {
+  if (v === 'yes') return 'Ja';
+  if (v === 'no') return 'Nee';
+  if (v === 'unsure') return 'Onzeker';
+  return 'Onbekend';
+}
+
+function renderHistory() {
+  const all = loadAll();
+  const dates = Object.keys(all).sort((a,b) => b.localeCompare(a));
+  const list = document.getElementById('history-list');
+
+  if (dates.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="icon">📋</div><p>Nog geen dagen geregistreerd.<br>Begin met het invullen van vandaag!</p></div>`;
+    return;
+  }
+
+  list.innerHTML = dates.map(d => {
+    const e = all[d];
+    const afClass = e.af || 'unsure';
+    const triggers = [...(e.stressors||[]), ...(e.mood||[])].filter(x => x !== 'Geen').slice(0,4);
+    return `
+      <div class="entry-card" onclick="openDetail('${d}')">
+        <div class="entry-header">
+          <div class="entry-date">${formatDate(d)}</div>
+          <div class="af-badge ${afClass}">${afLabel(e.af)}</div>
+        </div>
+        <div class="entry-stats">
+          <div class="stat-pill">BB: <span>${e.bbMorning}</span></div>
+          <div class="stat-pill">Stress: <span>${e.stress}</span></div>
+          <div class="stat-pill">HRV: <span>${e.hrv}</span></div>
+          <div class="stat-pill">Gevoel: <span>${e.feeling}/10</span></div>
+        </div>
+        ${triggers.length ? `<div class="entry-triggers">${triggers.map(t => `<span class="mini-chip">${t}</span>`).join('')}</div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+function openDetail(date) {
+  const all = loadAll();
+  const e = all[date];
+  currentDeleteDate = date;
+
+  document.getElementById('modal-title').textContent = formatDate(date);
+
+  const rows = [
+    ['AF aanval', afLabel(e.af)],
+    ['BB ochtend', e.bbMorning],
+    ['BB laagste', e.bbLow],
+    ['Stress (Garmin)', e.stress],
+    ['HRV', e.hrv + ' ms'],
+    ['Slaap', e.sleepStart + ' → ' + e.sleepEnd],
+    ['Slaapkwaliteit', (e.sleepQuality||[]).join(', ') || '-'],
+    ['Nacht wakker', (e.wakeup||[]).join(', ') || '-'],
+    ['Eetpatroon', (e.eating||[]).join(', ') || '-'],
+    ['Cafeïne', (e.caffeine||[]).join(', ') || '-'],
+    ['Alcohol', (e.alcohol||[]).join(', ') || '-'],
+    ['Water', e.water + 'L'],
+    ['Sport', (e.sport||[]).join(', ') || '-'],
+    ['Intensiteit', (e.intensity||[]).join(', ') || '-'],
+    ['Gevoel', e.feeling + '/10'],
+    ['Stressoren', (e.stressors||[]).join(', ') || '-'],
+    ['Stemming', (e.mood||[]).join(', ') || '-'],
+    ['Weer', (e.weather||[]).join(', ') || '-'],
+    ['Medicatie', (e.meds||[]).join(', ') || '-'],
+    ['Cyclus', (e.cycle||[]).join(', ') || '-'],
+    ['Notities', e.notes || '-'],
+  ];
+
+  document.getElementById('modal-body').innerHTML = rows.map(r =>
+    `<div class="detail-row"><div class="detail-key">${r[0]}</div><div class="detail-val">${r[1]}</div></div>`
+  ).join('');
+
+  document.getElementById('modal-delete-btn').onclick = () => deleteEntry(date);
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function deleteEntry(date) {
+  if (!confirm('Weet je zeker dat je deze dag wilt verwijderen?')) return;
+  const all = loadAll();
+  delete all[date];
+  localStorage.setItem(KEY, JSON.stringify(all));
+  closeModalDirect();
+  renderHistory();
+}
+
+function closeModal(event) {
+  if (event.target === document.getElementById('modal-overlay')) closeModalDirect();
+}
+
+function closeModalDirect() {
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+function renderAnalyse() {
+  const all = loadAll();
+  const entries = Object.values(all);
+  const cont = document.getElementById('analyse-content');
+
+  if (entries.length < 3) {
+    cont.innerHTML = `<div class="empty-state"><div class="icon">📊</div><p>Vul minimaal 3 dagen in om patronen te zien.</p></div>`;
+    return;
+  }
+
+  const afDays = entries.filter(e => e.af === 'yes');
+  const noAfDays = entries.filter(e => e.af === 'no');
+
+  const avg = (arr, fn) => arr.length ? (arr.reduce((s,e) => s + fn(e), 0) / arr.length).toFixed(1) : '-';
+
+  // Trigger frequency on AF days
+  const triggerCount = {};
+  afDays.forEach(e => {
+    [...(e.stressors||[]), ...(e.mood||[]), ...(e.caffeine||[]), ...(e.alcohol||[]), ...(e.eating||[])].forEach(t => {
+      if (t && t !== 'Geen' && t !== 'Nee' && t !== 'Geen') {
+        triggerCount[t] = (triggerCount[t]||0) + 1;
+      }
+    });
+  });
+
+  const sortedTriggers = Object.entries(triggerCount).sort((a,b) => b[1]-a[1]).slice(0,8);
+  const maxFreq = sortedTriggers[0]?.[1] || 1;
+
+  cont.innerHTML = `
+    <div class="insight-card" style="border-color: rgba(245,74,74,0.3);">
+      <div class="insight-title">AF aanvallen geregistreerd</div>
+      <div class="insight-value">${afDays.length} <span style="font-size:14px;color:var(--muted)">van ${entries.length} dagen</span></div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-bottom:12px;">
+      <div class="insight-card" style="flex:1;margin-bottom:0;">
+        <div class="insight-title">Gem. BB (AF-dag)</div>
+        <div class="insight-value" style="font-size:20px;">${avg(afDays, e => e.bbMorning)}</div>
+        <div class="insight-sub">vs ${avg(noAfDays, e => e.bbMorning)} zonder AF</div>
+      </div>
+      <div class="insight-card" style="flex:1;margin-bottom:0;">
+        <div class="insight-title">Gem. stress (AF-dag)</div>
+        <div class="insight-value" style="font-size:20px;">${avg(afDays, e => e.stress)}</div>
+        <div class="insight-sub">vs ${avg(noAfDays, e => e.stress)} zonder AF</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-bottom:12px;">
+      <div class="insight-card" style="flex:1;margin-bottom:0;">
+        <div class="insight-title">Gem. HRV (AF-dag)</div>
+        <div class="insight-value" style="font-size:20px;">${avg(afDays, e => e.hrv)}</div>
+        <div class="insight-sub">vs ${avg(noAfDays, e => e.hrv)} zonder AF</div>
+      </div>
+      <div class="insight-card" style="flex:1;margin-bottom:0;">
+        <div class="insight-title">Gem. gevoel (AF-dag)</div>
+        <div class="insight-value" style="font-size:20px;">${avg(afDays, e => e.feeling)}</div>
+        <div class="insight-sub">vs ${avg(noAfDays, e => e.feeling)} zonder AF</div>
+      </div>
+    </div>
+
+    ${sortedTriggers.length ? `
+    <div class="section-label" style="margin-top:16px;">Meest voorkomend op AF-dagen</div>
+    <div class="insight-card">
+      ${sortedTriggers.map(([name, count]) => `
+        <div class="trigger-freq">
+          <div style="font-size:13px;color:var(--text);min-width:120px;">${name}</div>
+          <div class="freq-bar"><div class="freq-fill" style="width:${Math.round(count/maxFreq*100)}%"></div></div>
+          <div class="freq-count">${count}x</div>
+        </div>
+      `).join('')}
+    </div>` : ''}
+
+    <div class="section-label">Gemiddelden overzicht</div>
+    <div class="insight-card">
+      <div class="detail-row"><div class="detail-key">Gem. BB ochtend</div><div class="detail-val">${avg(entries, e => e.bbMorning)}</div></div>
+      <div class="detail-row"><div class="detail-key">Gem. BB laagste punt</div><div class="detail-val">${avg(entries, e => e.bbLow)}</div></div>
+      <div class="detail-row"><div class="detail-key">Gem. stressscore</div><div class="detail-val">${avg(entries, e => e.stress)}</div></div>
+      <div class="detail-row"><div class="detail-key">Gem. HRV</div><div class="detail-val">${avg(entries, e => e.hrv)} ms</div></div>
+      <div class="detail-row"><div class="detail-key">Gem. gevoel</div><div class="detail-val">${avg(entries, e => e.feeling)}/10</div></div>
+    </div>
+  `;
+}
+
+function exportData() {
+  const all = loadAll();
+  const count = Object.keys(all).length;
+  if (count === 0) { alert('Nog geen data om te exporteren.'); return; }
+  const json = JSON.stringify(all, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const date = new Date().toISOString().split('T')[0];
+  a.href = url;
+  a.download = 'af-tracker-backup-' + date + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  const t = document.getElementById('toast');
+  t.textContent = '⬇ Back-up gedownload (' + count + ' dagen)';
+  t.classList.add('show');
+  setTimeout(() => { t.classList.remove('show'); t.textContent = '✓ Opgeslagen!'; }, 2500);
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (typeof imported !== 'object' || Array.isArray(imported)) throw new Error();
+      const existing = loadAll();
+      const existingCount = Object.keys(existing).length;
+      const newCount = Object.keys(imported).length;
+      const merged = { ...existing, ...imported };
+      const mergedCount = Object.keys(merged).length;
+      if (confirm(`Back-up bevat ${newCount} dagen.\nJe hebt nu ${existingCount} dagen lokaal.\nNa samenvoegen: ${mergedCount} dagen.\n\nDoorgaan?`)) {
+        localStorage.setItem(KEY, JSON.stringify(merged));
+        const t = document.getElementById('toast');
+        t.textContent = '✓ ' + mergedCount + ' dagen geladen!';
+        t.classList.add('show');
+        setTimeout(() => { t.classList.remove('show'); t.textContent = '✓ Opgeslagen!'; }, 2500);
+        renderAnalyse();
+      }
+    } catch {
+      alert('Dit bestand is geen geldige AF Tracker back-up.');
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+</script>
+</body>
+</html>
